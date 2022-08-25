@@ -82,7 +82,7 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
      *  3. Our subscription is funded with LINK
      *  4. The lottery should be in an "open" state
      */
-    function checkUpKeep(
+    function checkUpkeep(
         bytes memory /*checkData*/
     )
         public
@@ -102,7 +102,7 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     function performUpkeep(
         bytes calldata /*performData*/
     ) external override {
-        (bool upkeepNeeded, ) = checkUpKeep("");
+        (bool upkeepNeeded, ) = checkUpkeep("");
         if (!upkeepNeeded) {
             revert Raffle__UpkeepNotNeeded(
                 address(this).balance,
@@ -157,7 +157,19 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         return s_raffleState;
     }
 
-    function getNumWords() public view returns (uint256) {
+    function getNumWords() public pure returns (uint256) {
         return NUM_WORDS;
+    }
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
+    }
+
+    function getLatestTimestap() public view returns (uint256) {
+        return s_lastTimestamp;
+    }
+
+    function getRequestConfirmations() public pure returns (uint256) {
+        return REQUEST_CONFIRMATIONS;
     }
 }
