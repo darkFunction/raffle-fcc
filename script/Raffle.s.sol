@@ -2,11 +2,17 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
+import "../src/Raffle.sol"
 
-contract ContractScript is Script {
-    function setUp() public {}
+contract RaffleScript is Script {
+    
+    function run() external {
+        vm.startBroadcast();
+        
+        Raffle raffle = new Raffle(
+            
+        )
 
-    function run() public {
-        vm.broadcast();
+        vm.stopBroadcast();
     }
 }
