@@ -13,30 +13,28 @@ contract DeployLocal is Script {
     uint96 public immutable GAS_PRICE_LINK = 1000000000;
     bytes32 public immutable GOERLI_GAS_LANE =
         0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
-    uint64 public immutable GOERLI_SUBSCRIPTION_ID = 580;
     uint32 public immutable CALLBACK_GAS_LIMIT = 500000;
     uint256 public immutable INTERVAL = 30;
 
     /* State variables */
-    VRFCoordinatorV2Interface public coordinator;
+    VRFCoordinatorV2Mock public mockCoordinator;
     Raffle public raffle;
 
     function run() external {
         vm.startBroadcast();
 
         console.log("Deploying mock VRFCoordinatorV2");
-        coordinator = VRFCoordinatorV2Interface(
-            new VRFCoordinatorV2Mock(BASE_FEE, GAS_PRICE_LINK)
-        );
-        console.log("Coordinator deployed:", address(coordinator));
+        mockCoordinator = new VRFCoordinatorV2Mock(BASE_FEE, GAS_PRICE_LINK);
+        console.log("Coordinator deployed:", address(mockCoordinator));
 
         console.log("Creating mock VRF subscription");
-        uint64 subId = coordinator.createSubscription();
+        uint64 subId = mockCoordinator.createSubscription();
+        mockCoordinator.fundSubscription(subId, 10 ether);
         console.log("Mock subscription created: ", subId);
 
         console.log("Deploying Raffle");
         raffle = new Raffle(
-            address(coordinator),
+            address(mockCoordinator),
             0.1 ether,
             GOERLI_GAS_LANE,
             subId,
@@ -44,6 +42,9 @@ contract DeployLocal is Script {
             INTERVAL
         );
         console.log("Deployed Raffle contract");
+
+        console.log("Adding Raffle contract as coordinator consumer");
+        mockCoordinator.addConsumer(subId, address(raffle));
 
         vm.stopBroadcast();
     }

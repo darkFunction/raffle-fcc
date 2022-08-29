@@ -11,7 +11,7 @@ import "openzepplin/utils/Strings.sol";
 contract RaffleTest is Test {
     /* State variables */
     DeployLocal private deployment;
-    VRFCoordinatorV2Interface private vrfCoordinatorMock;
+    VRFCoordinatorV2Mock private vrfCoordinatorMock;
     Raffle private raffle;
     uint256 private entranceFee;
 
@@ -19,7 +19,7 @@ contract RaffleTest is Test {
         deployment = new DeployLocal();
         deployment.run();
         raffle = deployment.raffle();
-        vrfCoordinatorMock = deployment.coordinator();
+        vrfCoordinatorMock = deployment.mockCoordinator();
         entranceFee = deployment.ENTRANCE_FEE();
     }
 
@@ -51,19 +51,41 @@ contract RaffleTest is Test {
     }
 
     function test_whenRaffleEntered_andStateIsCalculating_thenReverts() public {
+        warpRaffleInterval();
+        hoax(address(0x1));
+        raffle.enterRaffle{value: entranceFee}();
+        raffle.performUpkeep(bytes(""));
+        hoax(address(0x2));
+        vm.expectRevert(Raffle__NotOpen.selector);
+        raffle.enterRaffle{value: entranceFee}();
+    }
+
+    function test_givenNoValueInRaffle_whenCheckUpkeep_thenReturnsFalse()
+        public
+    {
+        warpRaffleInterval();
+        (bool upkeepNeeded, ) = raffle.checkUpkeep(bytes(""));
+        assertEq(false, upkeepNeeded);
+    }
+
+    function test_givenRaffleNotOpen_whenCheckUpkeep_thenReturnsFalse() public {
+        hoax(address(0x1));
+        raffle.enterRaffle{value: entranceFee}();
+        warpRaffleInterval();
+        raffle.performUpkeep(bytes(""));
+        assertEq(
+            uint256(raffle.getRaffleState()),
+            uint256(Raffle.RaffleState.CALCULATING)
+        );
+        (bool upkeepNeeded, ) = raffle.checkUpkeep(bytes(""));
+        assertFalse(upkeepNeeded);
+    }
+
+    /* Utility functions */
+    function warpRaffleInterval() private {
         vm.warp(
             block.timestamp + raffle.getLatestTimestap() + raffle.getInterval()
         );
-        hoax(address(0x1));
-        raffle.enterRaffle{value: entranceFee}();
-        // (bool upkeepNeeded, ) = raffle.checkUpkeep(bytes(""));
-        // assertEq(true, upkeepNeeded);
-        vm.expectRevert(Raffle__NotOpen.selector);
-        raffle.performUpkeep(bytes(""));
-        // assertEq(
-        //     uint256(raffle.getRaffleState()),
-        //     uint256(Raffle.RaffleState.CALCULATING)
-        // );
     }
 
     /* Raffle events */
